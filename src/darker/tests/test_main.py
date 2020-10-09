@@ -83,7 +83,6 @@ A_PY_DIFF_BLACK = [
     "-print( '42')",
     '+',
     '+print("42")',
-    '',
 ]
 
 A_PY_DIFF_BLACK_NO_STR_NORMALIZE = [
@@ -95,7 +94,6 @@ A_PY_DIFF_BLACK_NO_STR_NORMALIZE = [
     "-print( '42')",
     '+',
     "+print('42')",
-    '',
 ]
 
 A_PY_DIFF_BLACK_ISORT = [
@@ -108,7 +106,6 @@ A_PY_DIFF_BLACK_ISORT = [
     "-print( '42')",
     '+',
     '+print("42")',
-    '',
 ]
 
 
@@ -161,20 +158,20 @@ def test_format_edited_parts_all_unchanged(git_repo, monkeypatch):
 @pytest.mark.parametrize(
     'arguments, expect_stdout, expect_a_py, expect_retval',
     [
-        (['--diff'], A_PY_DIFF_BLACK, A_PY, 0),
-        (['--isort'], [''], A_PY_BLACK_ISORT, 0),
+        (["--diff"], A_PY_DIFF_BLACK, A_PY, 0),
+        (["--isort"], [], A_PY_BLACK_ISORT, 0),
         (
             ['--skip-string-normalization', '--diff'],
             A_PY_DIFF_BLACK_NO_STR_NORMALIZE,
             A_PY,
             0,
         ),
-        ([], [''], A_PY_BLACK, 0),
-        (['--isort', '--diff'], A_PY_DIFF_BLACK_ISORT, A_PY, 0),
-        (['--check'], [''], A_PY, 1),
-        (['--check', '--diff'], A_PY_DIFF_BLACK, A_PY, 1),
-        (['--check', '--isort'], [''], A_PY, 1),
-        (['--check', '--diff', '--isort'], A_PY_DIFF_BLACK_ISORT, A_PY, 1),
+        ([], [], A_PY_BLACK, 0),
+        (["--isort", "--diff"], A_PY_DIFF_BLACK_ISORT, A_PY, 0),
+        (["--check"], [], A_PY, 1),
+        (["--check", "--diff"], A_PY_DIFF_BLACK, A_PY, 1),
+        (["--check", "--isort"], [], A_PY, 1),
+        (["--check", "--diff", "--isort"], A_PY_DIFF_BLACK_ISORT, A_PY, 1),
     ],
 )
 @pytest.mark.parametrize("newline", ["\n", "\r\n"], ids=["unix", "windows"])
@@ -196,8 +193,15 @@ def test_main(
 
     retval = darker.__main__.main(arguments + ['a.py'])
 
-    stdout = capsys.readouterr().out.replace(str(git_repo.root), '')
-    assert stdout.split("\n") == expect_stdout
+    stdout = capsys.readouterr().out.replace(str(git_repo.root), "")
+    diff_output = stdout.splitlines(False)
+    if len(diff_output) >= 1:
+        diff_output[0], old_mtime = diff_output[0].split("\t", 1)
+        assert old_mtime.endswith(" +0000")
+        if len(diff_output) >= 2:
+            diff_output[1], new_mtime = diff_output[1].split("\t", 1)
+            assert new_mtime.endswith(" +0000")
+    assert diff_output == expect_stdout
     assert paths["a.py"].read("br").decode("ascii") == newline.join(expect_a_py)
     assert paths["b.py"].read("br").decode("ascii") == "print(42 ){newline}"
     assert retval == expect_retval
@@ -221,34 +225,70 @@ def test_main_encoding(git_repo, encoding, text, newline):
     assert result == b"".join(expect)
 
 
-def test_output_diff(capsys):
-    """output_diff() prints Black-style diff output"""
+def test_print_diff(capsys):
+    """print_diff() prints Black-style diff output with 5 lines of context"""
     darker.__main__.print_diff(
         Path('a.py'),
         TextDocument.from_lines(
-            ["unchanged", "removed", "kept 1", "2", "3", "4", "5", "6", "7", "changed"]
+            [
+                "unchanged",
+                "removed",
+                "kept 1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10",
+                "11",
+                "changed",
+            ],
+            mtime="2020-10-08 19:16:22.146405 +0000",
         ),
         TextDocument.from_lines(
-            ["inserted", "unchanged", "kept 1", "2", "3", "4", "5", "6", "7", "Changed"]
+            [
+                "inserted",
+                "unchanged",
+                "kept 1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10",
+                "11",
+                "Changed",
+            ],
+            mtime="2020-10-08 19:21:09.005501 +0000",
         ),
     )
 
     assert capsys.readouterr().out.splitlines() == [
-        '--- a.py',
-        '+++ a.py',
-        '@@ -1,5 +1,5 @@',
-        '+inserted',
-        ' unchanged',
-        '-removed',
-        ' kept 1',
-        ' 2',
-        ' 3',
-        '@@ -7,4 +7,4 @@',
-        ' 5',
-        ' 6',
-        ' 7',
-        '-changed',
-        '+Changed',
+        "--- a.py\t2020-10-08 19:16:22.146405 +0000",
+        "+++ a.py\t2020-10-08 19:21:09.005501 +0000",
+        "@@ -1,7 +1,7 @@",
+        "+inserted",
+        " unchanged",
+        "-removed",
+        " kept 1",
+        " 2",
+        " 3",
+        " 4",
+        " 5",
+        "@@ -9,6 +9,6 @@",
+        " 7",
+        " 8",
+        " 9",
+        " 10",
+        " 11",
+        "-changed",
+        "+Changed",
     ]
 
 
