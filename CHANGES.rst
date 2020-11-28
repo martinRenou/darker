@@ -6,6 +6,8 @@ These features will be included in the next release:
 Added
 -----
 - A unified ``TextDocument`` class to represent source code file contents
+- If AST differs with zero context lines, search for the lowest successful number of
+  context lines using a binary search to improve performance
 
 Fixed
 -----
