@@ -6,6 +6,7 @@ These features will be included in the next release:
 Added
 -----
 - A unified ``TextDocument`` class to represent source code file contents
+- ``darker --diff`` output is now identical to that of ``black --diff``
 
 Fixed
 -----
