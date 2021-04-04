@@ -269,14 +269,17 @@ def test_output_diff(capsys):
     ]
 
 
-@pytest.mark.parametrize(
-    "new_content, expect",
-    [
-        (TextDocument(), b""),
-        (TextDocument(lines=["touché"]), b"touch\xc3\xa9\n"),
-        (TextDocument(lines=["touché"], newline="\r\n"), b"touch\xc3\xa9\r\n"),
-        (TextDocument(lines=["touché"], encoding="iso-8859-1"), b"touch\xe9\n"),
-    ],
+@pytest.mark.kwparametrize(
+    dict(new_content=TextDocument(), expect=b""),
+    dict(new_content=TextDocument(lines=["touché"]), expect=b"touch\xc3\xa9\n"),
+    dict(
+        new_content=TextDocument(lines=["touché"], newline="\r\n"),
+        expect=b"touch\xc3\xa9\r\n",
+    ),
+    dict(
+        new_content=TextDocument(lines=["touché"], encoding="iso-8859-1"),
+        expect=b"touch\xe9\n",
+    ),
 )
 def test_modify_file(tmp_path, new_content, expect):
     """Encoding and newline are respected when writing a text file on disk"""
